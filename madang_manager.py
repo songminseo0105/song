@@ -54,6 +54,9 @@ book_list = [None] + [f"{row.bookid},{row.bookname}" for _, row in book_df.iterr
 # ============================================
 # TAB 1: 고객 조회
 # ============================================
+# ============================================
+# TAB 1: 고객 조회
+# ============================================
 with tab1:
     st.header("🔍 고객 조회 및 거래 내역")
 
@@ -64,21 +67,28 @@ with tab1:
     custid = None
 
     if name.strip():
+        lookup = name.strip()
+
+        # 🔥 수정된 조회 SQL (TRIM 적용)
         sql = """
             SELECT c.custid, c.name, b.bookname, o.orderdate, o.saleprice
             FROM Customer c
             JOIN Orders o ON c.custid = o.custid
             JOIN Book b ON o.bookid = b.bookid
-            WHERE c.name = ?
+            WHERE TRIM(c.name) = TRIM(?)
         """
-        df = run_query(sql, (name.strip(),))
+        df = run_query(sql, (lookup,))
 
         if not df.empty:
             st.success(f"'{name}' 고객의 거래 내역")
             st.dataframe(df)
             custid = df["custid"][0]
+
         else:
-            df2 = run_query("SELECT custid, name FROM Customer WHERE name = ?", (name.strip(),))
+            # 🔥 고객만 존재하는지 확인 (TRIM 적용)
+            sql2 = "SELECT custid FROM Customer WHERE TRIM(name) = TRIM(?)"
+            df2 = run_query(sql2, (lookup,))
+
             if not df2.empty:
                 custid = df2["custid"][0]
                 st.warning("거래 내역은 없지만 고객은 존재합니다.")
